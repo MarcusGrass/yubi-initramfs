@@ -64,6 +64,12 @@ pub(crate) fn main_loop() -> Result<(), i32> {
             })?;
             Ok(())
         }
+        "--switch" | "-s" => {
+            // Cannot return with anything but an error
+            let err = initramfs_lib::switch_root();
+            unix_eprintln!("Error: Failed to switch root {err:?}");
+            Err(1)
+        }
         "--init" => {
             initramfs_lib::full_init(&cfg)
                 .map_err(|e| {

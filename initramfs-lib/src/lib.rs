@@ -62,7 +62,6 @@ pub fn run_mdev() -> Result<()> {
         return Err(Error::Spawn(format!("Got bad exit code from /bin/busybox mdev -s: {exit}")));
     }
     Ok(())
-
 }
 
 #[cfg_attr(test, derive(Debug))]
@@ -140,6 +139,24 @@ pub fn try_unmount() -> Result<()> {
     Ok(())
 }
 
+pub fn switch_root() -> Error {
+    let mut cmd = match Command::new("/bin/busybox\0") {
+        Ok(cmd) => cmd,
+        Err(e) => return Error::Spawn(format!("Failed to create command /bin/busybox: {e}")),
+    };
+    if let Err(e) = cmd.arg("switch_root\0") {
+        return Error::Spawn(format!("Failed to append command switch_root to /bin/busybox: {e}"));
+    }
+    if let Err(e) = cmd.arg("/mnt/root\0") {
+        return Error::Spawn(format!("Failed to append command /mnt/root to '/bin/busybox switch_root': {e}"));
+    }
+    if let Err(e) = cmd.arg("/sbin/init\0") {
+        return Error::Spawn(format!("Failed to append command /sbin/init to '/bin/busybox switch_root /mnt/root': {e}"))
+    }
+    let e = cmd.exec();
+    Error::Spawn(format!("Failed to execute '/bin/busybox switch_root /mnt/root /sbin/init': {e}"))
+}
+
 #[derive(Debug)]
 pub struct Cfg {
     root_uuid: String,
@@ -184,6 +201,7 @@ mod tests {
 
     // Needs your testing machine's disk uuids
     #[test]
+    #[ignore]
     fn test_blkid() {
         let cfg = read_cfg("/home/gramar/code/rust/yubi-initramfs/initramfs.cfg").unwrap();
         let parts = get_partitions(&cfg).unwrap();
