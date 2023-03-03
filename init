@@ -1,0 +1,31 @@
+#!/bin/busybox sh
+
+# Udev(mdev) afaik uses /proc, /dev, and sys to find our Yubikey we need them up and running
+mount -t proc none /proc
+mount -t devtmpfs none /dev
+mount -t sysfs none /sys
+
+# We need mdev in the initramfs
+echo /sbin/mdev > /proc/sys/kernel/hotplug
+# Make mdev populate /dev oneshot
+mdev -s
+
+# Your cryptodisks here (unincrypted UUID, we're going to find them, and open them using cryptsetup)
+ROOT_UUID="7e127144-f930-4656-84b4-d6a27fa7caa6"
+SWAP_UUID="c1c1f5cf-f248-4269-82d3-99d1a6004e1e"
+HOME_UUID="d2059da0-7eae-4396-badf-e6ed0ccfd04b"
+
+# The Yubikey integration, will be responsible for mounting and swapping on the partitions after encryption
+# cryptsetup will be invoked with the secret from the yubikey and we'll mount directly from /dev/mapper/<c-part>
+# in yubi-boot. Ex.
+# ./yubi-boot "$ROOT_UUID" "$SWAP_UUID" "$HOME_UUID"
+
+# Init will remount these filesystems later
+umount /proc
+umount /dev
+umount /sys
+
+# Delete all files on the initramfs and make /mnt/root the new root
+# Probably uses https://man7.org/linux/man-pages/man2/pivot_root.2.html under the hood, could port that to rust
+# but would need to check out the musl implementation for pointers
+exec /sbin/switch_root /mnt/root /sbin/init

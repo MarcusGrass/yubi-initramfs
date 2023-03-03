@@ -1,0 +1,2 @@
+[workspace]
+members = ["initramfs-lib", "yubi-initramfs"]
