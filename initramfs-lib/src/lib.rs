@@ -16,6 +16,8 @@ extern crate alloc;
 pub fn full_init(cfg: &Cfg) -> Result<()> {
     mount_pseudo_filesystems()
         .map_err(|e| Error::App(format!("Failed to mount pseudo filesystems {e:?}")))?;
+    run_mdev()
+        .map_err(|e| Error::App(format!("Failed to run mdev oneshot: {e:?}")))?;
     mount_user_filesystems(cfg)
         .map_err(|e| Error::App(format!("Failed to mount user filesystems {e:?}")))?;
     try_unmount()
@@ -45,6 +47,24 @@ pub fn mount_user_filesystems(cfg: &Cfg) -> Result<()> {
     Ok(())
 }
 
+pub fn run_mdev() -> Result<()> {
+    let mut cmd = Command::new("/bin/busybox\0")
+        .map_err(|e| Error::Spawn(format!("Failed to create command /bin/busybox: {e}")))?;
+    cmd.arg("mdev\0")
+        .map_err(|e| Error::Spawn(format!("Failed to append command mdev to /bin/busybox: {e}")))?
+        .arg("-s\0")
+        .map_err(|e| Error::Spawn(format!("Failed to append command -s to '/bin/busybox mdev: {e}")))?;
+    let exit = cmd.spawn()
+        .map_err(|e| Error::Spawn(format!("Failed to spawn /bin/busybox mdev -s: {e}")))?
+        .wait()
+        .map_err(|e| Error::Spawn(format!("Failed to wait for process exit for /bin/busybox mdev -s: {e}")))?;
+    if exit != 0 {
+        return Err(Error::Spawn(format!("Got bad exit code from /bin/busybox mdev -s: {exit}")));
+    }
+    Ok(())
+
+}
+
 #[cfg_attr(test, derive(Debug))]
 pub struct Partitions {
     pub root: String,
@@ -53,8 +73,10 @@ pub struct Partitions {
 }
 
 pub fn get_partitions(cfg: &Cfg) -> Result<Partitions> {
-    let cmd = Command::new("blkid")
-        .map_err(|e| Error::FindPartitions(format!("Failed to instantiate blkid command {e}")))?;
+    let mut cmd = Command::new("/bin/busybox\0")
+        .map_err(|e| Error::Spawn(format!("Failed to instantiate busybox command {e}")))?;
+    cmd.arg("blkid\0")
+        .map_err(|e| Error::Spawn(format!("Failed to append blkid to busybox command {e}")))?;
     let tgt = spawn_await_stdout(cmd, 4096)?;
     let mut root = None;
     let mut swap = None;
@@ -118,6 +140,7 @@ pub fn try_unmount() -> Result<()> {
     Ok(())
 }
 
+#[derive(Debug)]
 pub struct Cfg {
     root_uuid: String,
     swap_uuid: String,

@@ -30,21 +30,48 @@ pub(crate) fn main_loop() -> Result<(), i32> {
             1
         })?;
     match command {
-        "--list-partitions" => {
+        "--list-partitions" | "-l" => {
             let partitions = initramfs_lib::get_partitions(&cfg)
                 .map_err(|e| {
-                    unix_eprintln!("Failed to get partitions: {e:?}");
+                    unix_eprintln!("Error: Failed to get partitions: {e:?}");
                     1
                 })?;
-            unix_println!("Root: {}\nSwap: {}\nHome: {}", partitions.root, partitions.swap, partitions.home);
+            unix_println!("Successfully found partitions.\nRoot: {}\nSwap: {}\nHome: {}", partitions.root, partitions.swap, partitions.home);
+            Ok(())
+        }
+        "--mount-pseudo" | "-p" => {
+            initramfs_lib::mount_pseudo_filesystems()
+                .map_err(|e| {
+                    unix_eprintln!("Error: Failed to mount pseudo filesystems {e:?}");
+                    1
+                })?;
+            unix_println!("Successfully mounted pseudo filesystem.");
+            Ok(())
+        }
+        "--run-mdev" | "-m" => {
+            initramfs_lib::run_mdev()
+                .map_err(|e| {
+                    unix_eprintln!("Error: Failed to run mdev {e:?}");
+                    1
+                })?;
+            unix_println!("Successfully ran mdev.");
+            Ok(())
+        }
+        "--mount-user" | "-u" => {
+            initramfs_lib::mount_user_filesystems(&cfg).map_err(|e| {
+                unix_eprintln!("Error: Failed to mount user filesystems using cfg  at path {cfg:?}: {e:?}");
+                1
+            })?;
             Ok(())
         }
         "--init" => {
             initramfs_lib::full_init(&cfg)
                 .map_err(|e| {
-                    unix_eprintln!("Failed init full {e:?}");
+                    unix_eprintln!("Error: Failed init full {e:?}");
                     1
-                })
+                })?;
+            unix_println!("Successfully ran init setup");
+            Ok(())
         }
         s => {
             unix_eprintln!("Unrecognized argument {s}");
