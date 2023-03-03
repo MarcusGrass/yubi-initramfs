@@ -27,21 +27,21 @@ pub fn full_init(cfg: &Cfg) -> Result<()> {
 
 pub fn mount_pseudo_filesystems() -> Result<()> {
     mount::<_, _, &'static str>("none\0", "/proc\0", FilesystemType::Proc, 0, None)
-        .map_err(|e| Error::MountPseudo(format!("Failed to mount proc fs: {e}")))?;
+        .map_err(|e| Error::MountPseudo(format!("Failed to mount proc types at /proc: {e}")))?;
     mount::<_, _, &'static str>("none\0", "/sys\0", FilesystemType::Sysfs, 0, None)
-        .map_err(|e| Error::MountPseudo(format!("Failed to mount sysfs: {e}")))?;
-    mount::<_, _, &'static str>("none\0", "/dev\0", FilesystemType::Tmpfs, 0, None)
-        .map_err(|e| Error::MountPseudo(format!("Failed to mount devtmpfs: {e}")))?;
+        .map_err(|e| Error::MountPseudo(format!("Failed to mount sysfs types at /sys: {e}")))?;
+    mount::<_, _, &'static str>("none\0", "/dev\0", FilesystemType::Devtmpfs, 0, None)
+        .map_err(|e| Error::MountPseudo(format!("Failed to mount devtmpfs at /dev: {e}")))?;
     Ok(())
 }
 
 pub fn mount_user_filesystems(cfg: &Cfg) -> Result<()> {
     let parts = get_partitions(cfg)
         .map_err(|e| Error::Mount(format!("Failed to find partitions {e:?}")))?;
-    mount::<_, _, &'static str>(&parts.root, "/root/mnt\0", FilesystemType::Ext4, 0, None)
-        .map_err(|e| Error::Mount(format!("Failed to mount root partition {} to /root/mnt: {e:?}", parts.root)))?;
-    mount::<_, _, &'static str>(&parts.home, "/root/mnt/home\0", FilesystemType::Ext4, 0, None)
-        .map_err(|e| Error::Mount(format!("Failed to mount home partition {} to /root/mnt/home: {e:?}", parts.home)))?;
+    mount::<_, _, &'static str>(&parts.root, "/mnt/root\0", FilesystemType::Ext4, 0, None)
+        .map_err(|e| Error::Mount(format!("Failed to mount root partition {} to /mnt/root: {e:?}", parts.root)))?;
+    mount::<_, _, &'static str>(&parts.home, "/mnt/root/home\0", FilesystemType::Ext4, 0, None)
+        .map_err(|e| Error::Mount(format!("Failed to mount home partition {} to /mnt/root/home: {e:?}", parts.home)))?;
     swapon(&parts.swap, 0)
         .map_err(|e| Error::Mount(format!("Failed to swapon {}: {e:?}", parts.swap)))?;
     Ok(())
