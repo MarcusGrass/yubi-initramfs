@@ -26,12 +26,12 @@ pub fn full_init(cfg: &Cfg) -> Result<()> {
 }
 
 pub fn mount_pseudo_filesystems() -> Result<()> {
-    mount::<_, _, &'static str>("proc\0", "/proc\0", FilesystemType::Proc, 0, None)
+    mount::<_, _, &'static str>("none\0", "/proc\0", FilesystemType::Proc, 0, None)
         .map_err(|e| Error::MountPseudo(format!("Failed to mount proc fs: {e}")))?;
-    mount::<_, _, &'static str>("sys\0", "/sysfs\0", FilesystemType::Sysfs, 0, None)
+    mount::<_, _, &'static str>("none\0", "/sys\0", FilesystemType::Sysfs, 0, None)
         .map_err(|e| Error::MountPseudo(format!("Failed to mount sysfs: {e}")))?;
-    mount::<_, _, &'static str>("dev\0", "/sysfs\0", FilesystemType::Sysfs, 0, None)
-        .map_err(|e| Error::MountPseudo(format!("Failed to mount sysfs: {e}")))?;
+    mount::<_, _, &'static str>("none\0", "/dev\0", FilesystemType::Tmpfs, 0, None)
+        .map_err(|e| Error::MountPseudo(format!("Failed to mount devtmpfs: {e}")))?;
     Ok(())
 }
 
