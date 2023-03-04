@@ -5,6 +5,8 @@ pub type Result<T> = core::result::Result<T, Error>;
 #[derive(Debug)]
 pub enum Error {
     App(String),
+    Bail(String),
+    Crypt(String),
     FindPartitions(String),
     MountPseudo(String),
     Mount(String),
@@ -12,3 +14,4 @@ pub enum Error {
     Spawn(String),
     UnMount(String),
 }
+

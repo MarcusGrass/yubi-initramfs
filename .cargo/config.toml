@@ -11,6 +11,3 @@ debug = false # Inherits from release so should actually do nothing but whatever
 inherits = "release"
 lto = true # link time optimization
 strip = true # smaller binary
-
-[build]
-target = "x86_64-unknown-linux-musl"
