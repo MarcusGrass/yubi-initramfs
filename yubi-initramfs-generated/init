@@ -1,3 +1,0 @@
-#!busybox sh
-echo "Dropping into shell"
-exec sh
